@@ -77,3 +77,31 @@ docker run -d \
 	-v $PWD/index.html:/usr/share/nginx/html/index.html:ro \	# -v <путь_на_хосте>:<путь_в_контейнере> - связывает файл на хосте с файлом в контейнере. Изменения на хосте сразу видны изнутри, а :ro устанавливает на контейнере только чтение в целях безопасности
 	--name my-web \
 	simple-web:v1
+
+### Кастомизация Nginx и скрытие версии (Security Hardening)
+По умолчанию Nginx отдает свое точную версию в HTTP-заголовках, что упрощает разведку для злоумышленников (Information Disclosure)
+
+1. Создан конфиг `default.conf` с директивой `server_tokens off;`:
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    server_tokens off; # скрывает версию Nginx из заголовков ответа
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+    }
+}
+
+2.Запуск контейнера с монтированием конфига(текущий контейнер надо остановить и удалить через docker rm -f my-web)
+```bash
+docker run -d \
+  -p 127.0.0.1:8081:80 \
+  -v $PWD/index.html:/usr/share/nginx/html/index.html:ro \
+  -v $PWD/nginx.conf:/etc/nginx/nginx.conf:ro \
+  --name my-web \
+  simple-web:v1
+
+3. Проверяй результат через curl -I. Версия Nginx должна быть скрыта
