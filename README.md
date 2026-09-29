@@ -105,3 +105,31 @@ docker run -d \
   simple-web:v1
 
 3. Проверяй результат через curl -I. Версия Nginx должна быть скрыта
+
+#### Полная упаковка в образ (simple-web:v2)
+Корневой конфиг Nginx и статика вшиты напрямую в образ.
+
+1. `Dockerfile`:
+```dockerfile
+FROM nginx:alpine
+
+# Заменяем главный конфиг Nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Копируем статический сайт
+COPY index.html /usr/share/nginx/html/index.html
+
+EXPOSE 80
+
+ВАЖНО! Если в файле есть events и http — это главный конфиг, его место строго в /etc/nginx/nginx.conf.
+Если в файле только блок одного сайта server { ... } — это конфиг виртуального хоста, его кладут в /etc/nginx/conf.d/<имя>.conf.
+
+2. Сборка и безопасный запуск
+```bash
+docker build -t simple-web:v2 .
+docker run -d -p 127.0.0.1:8081:80 --name my-web simple-web:v2
+
+3. Проверка скрытия версии веб-сервера
+```bash
+curl -I 127.0.0.1:8081
+# Ожидаемый результат: заголовок "Server: nginx" без номеров версий
